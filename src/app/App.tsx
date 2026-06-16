@@ -420,12 +420,16 @@ function DetailScreen({
   onBack,
   onAddToCart,
   onBuyNow,
+  onViewCart,
+  toastMessage,
   countdown,
 }: {
   item: FoodItem;
   onBack: () => void;
   onAddToCart: (item: FoodItem) => void;
   onBuyNow: (item: FoodItem) => void;
+  onViewCart: () => void;
+  toastMessage: string | null;
   countdown: string;
 }) {
   const remaining = item.total - item.sold;
@@ -496,13 +500,31 @@ function DetailScreen({
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#f0ebe6] px-4 py-4 flex gap-3">
-        <button onClick={() => onAddToCart(item)} className="flex-1 border-2 border-[#ff3d00] text-[#ff3d00] rounded-2xl py-3.5 text-sm active:scale-95 transition-transform" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
-          Thêm vào giỏ
-        </button>
-        <button onClick={() => onBuyNow(item)} className="flex-1 bg-[#ff3d00] text-white rounded-2xl py-3.5 text-sm active:scale-95 transition-transform shadow-lg" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
-          Mua ngay 🔥
-        </button>
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+        {toastMessage && (
+          <div className="px-4 pb-2">
+            <div className="rounded-2xl bg-[#1a1a1a]/95 px-4 py-3 text-sm text-white shadow-xl ring-1 ring-white/10">
+              <div className="flex items-center gap-2">
+                <ShoppingCart size={16} className="shrink-0 text-white" />
+                <span className="flex-1 min-w-0">{toastMessage}</span>
+                <button
+                  onClick={onViewCart}
+                  className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#1a1008] transition hover:bg-gray-100"
+                >
+                  Xem giỏ hàng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="bg-white border-t border-[#f0ebe6] px-4 py-4 flex gap-3">
+          <button onClick={() => onAddToCart(item)} className="flex-1 border-2 border-[#ff3d00] text-[#ff3d00] rounded-2xl py-3.5 text-sm active:scale-95 transition-transform" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
+            Thêm vào giỏ
+          </button>
+          <button onClick={() => onBuyNow(item)} className="flex-1 bg-[#ff3d00] text-white rounded-2xl py-3.5 text-sm active:scale-95 transition-transform shadow-lg" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
+            Mua ngay 🔥
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1336,22 +1358,6 @@ export default function App() {
 
         {/* Screen content */}
         <div className="absolute inset-0 overflow-hidden">
-          {toastMessage && (
-            <div className="absolute left-1/2 top-4 z-50 -translate-x-1/2">
-              <div className="flex flex-col items-center gap-3 rounded-3xl bg-[#1a1a1a]/95 px-4 py-3 text-sm text-white shadow-xl ring-1 ring-white/10 w-[calc(100vw-2rem)] max-w-[320px] sm:w-auto">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart size={16} className="text-white" />
-                  <span>{toastMessage}</span>
-                </div>
-                <button
-                  onClick={() => setScreen("cart")}
-                  className="rounded-full bg-white text-[#1a1008] px-3 py-1 text-xs font-semibold transition hover:bg-gray-100"
-                >
-                  Xem giỏ hàng
-                </button>
-              </div>
-            </div>
-          )}
           {screen === "home" && (
             <HomeScreen onFlashSale={() => setScreen("flashsale")} onCart={() => setScreen("cart")} cartCount={cartCount} countdown={countdown} />
           )}
@@ -1371,6 +1377,8 @@ export default function App() {
               onBack={() => setScreen("flashsale")}
               onAddToCart={handleAddToCart}
               onBuyNow={handleBuyNow}
+              onViewCart={() => setScreen("cart")}
+              toastMessage={toastMessage}
               countdown={countdown}
             />
           )}
