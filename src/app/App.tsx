@@ -49,7 +49,7 @@ const FOOD_ITEMS: FoodItem[] = [
     name: "Pizza Hải Sản",
     originalPrice: 120000,
     salePrice: 59000,
-    sold: 120,
+    sold: 147,
     total: 150,
     image:
       "https://images.unsplash.com/photo-1694450060144-0354599b765e?w=600&h=400&fit=crop&auto=format",
@@ -62,7 +62,7 @@ const FOOD_ITEMS: FoodItem[] = [
     name: "Gà Rán Giòn",
     originalPrice: 85000,
     salePrice: 39000,
-    sold: 80,
+    sold: 97,
     total: 100,
     image:
       "https://images.unsplash.com/photo-1586793783658-261cddf883ef?w=600&h=400&fit=crop&auto=format",
@@ -120,6 +120,14 @@ function formatPriceShort(price: number) {
   return (price / 1000).toFixed(0) + "k";
 }
 
+function getRemaining(item: FoodItem) {
+  return item.total - item.sold;
+}
+
+function isOutOfStock(item: FoodItem) {
+  return getRemaining(item) <= 0;
+}
+
 function useCountdown(initialSeconds: number) {
   const [seconds, setSeconds] = useState(initialSeconds);
   useEffect(() => {
@@ -171,11 +179,13 @@ function HomeScreen({
   cartCount,
   onCart,
   countdown,
+  items,
 }: {
   onFlashSale: () => void;
   onCart: () => void;
   cartCount: number;
   countdown: string;
+  items: FoodItem[];
 }) {
   return (
     <div className="flex flex-col h-full bg-[#f8f4f0] overflow-y-auto">
@@ -242,7 +252,7 @@ function HomeScreen({
               </div>
             </div>
             <div className="mt-4 flex gap-2">
-              {FOOD_ITEMS.slice(0, 3).map((item) => (
+              {items.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex-1 bg-white/10 rounded-xl overflow-hidden">
                   <ImageWithFallback src={item.image} alt={item.name} className="w-full h-16 object-cover" />
                   <div className="p-1.5">
@@ -274,7 +284,7 @@ function HomeScreen({
       <div className="px-4 mt-5 mb-28">
         <h2 className="text-[#1a1008] mb-3" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800 }}>Phổ biến hôm nay</h2>
         <div className="flex flex-col gap-3">
-          {FOOD_ITEMS.map((item) => (
+          {items.map((item) => (
             <div key={item.id} className="bg-white rounded-2xl flex gap-3 p-3 shadow-sm">
               <ImageWithFallback src={item.image} alt={item.name} className="w-20 h-20 rounded-xl object-cover" />
               <div className="flex-1">
@@ -302,17 +312,17 @@ function HomeScreen({
 function FlashSaleScreen({
   onBack,
   onDetail,
-  onOutOfStock,
   onCart,
   cartCount,
   countdown,
+  items,
 }: {
   onBack: () => void;
   onDetail: (item: FoodItem) => void;
-  onOutOfStock: (item: FoodItem) => void;
   onCart: () => void;
   cartCount: number;
   countdown: string;
+  items: FoodItem[];
 }) {
   return (
     <div className="flex flex-col h-full bg-[#f8f4f0]">
@@ -346,30 +356,30 @@ function FlashSaleScreen({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-28">
-        {FOOD_ITEMS.map((item) => {
-          const remaining = item.total - item.sold;
-          const isOutOfStock = remaining <= 0;
+        {items.map((item) => {
+          const remaining = getRemaining(item);
+          const itemOutOfStock = isOutOfStock(item);
           const discountPct = Math.round((1 - item.salePrice / item.originalPrice) * 100);
 
           return (
             <div
               key={item.id}
               className="bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.99] transition-transform"
-              onClick={() => isOutOfStock ? onOutOfStock(item) : onDetail(item)}
+              onClick={() => onDetail(item)}
             >
               <div className="flex gap-3 p-3">
                 <div className="relative shrink-0">
-                  <ImageWithFallback src={item.image} alt={item.name} className={`w-24 h-24 rounded-xl object-cover ${isOutOfStock ? "grayscale" : ""}`} />
-                  <div className={`absolute top-1 left-1 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg ${isOutOfStock ? "bg-gray-400" : "bg-[#ff3d00]"}`}>
-                    {isOutOfStock ? "HẾT" : `-${discountPct}%`}
+                  <ImageWithFallback src={item.image} alt={item.name} className={`w-24 h-24 rounded-xl object-cover ${itemOutOfStock ? "grayscale" : ""}`} />
+                  <div className={`absolute top-1 left-1 text-white text-[10px] font-black px-1.5 py-0.5 rounded-lg ${itemOutOfStock ? "bg-gray-400" : "bg-[#ff3d00]"}`}>
+                    {itemOutOfStock ? "HẾT" : `-${discountPct}%`}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`mb-1 text-sm ${isOutOfStock ? "text-[#8a7060]" : "text-[#1a1008]"}`} style={{ fontWeight: 700 }}>
+                  <div className={`mb-1 text-sm ${itemOutOfStock ? "text-[#8a7060]" : "text-[#1a1008]"}`} style={{ fontWeight: 700 }}>
                     {item.name}
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    {isOutOfStock ? (
+                    {itemOutOfStock ? (
                       <span className="text-[#8a7060] text-sm line-through">{formatPriceShort(item.salePrice)}</span>
                     ) : (
                       <>
@@ -381,14 +391,14 @@ function FlashSaleScreen({
                     )}
                   </div>
                   <div className="text-xs text-[#8a7060] mb-1.5">
-                    Đã bán {item.sold} • {isOutOfStock ? <span className="text-red-500 font-semibold">Đã hết hàng</span> : `Còn ${remaining} suất`}
+                    Đã bán {item.sold} • {itemOutOfStock ? <span className="text-red-500 font-semibold">Đã hết hàng</span> : `Còn ${remaining} suất`}
                   </div>
                   <StockBar sold={item.sold} total={item.total} />
                 </div>
               </div>
 
               <div className={`border-t border-[#f0ebe6] px-3 py-2.5 flex items-center justify-between`}>
-                {isOutOfStock ? (
+                {itemOutOfStock ? (
                   <>
                     <span className="text-xs text-[#8a7060]">Sản phẩm đã hết — Nhấn để xem chi tiết</span>
                     <span className="text-xs text-[#8a7060] bg-gray-100 rounded-lg px-3 py-1 font-semibold">Hết hàng</span>
@@ -422,6 +432,7 @@ function DetailScreen({
   onBuyNow,
   onViewCart,
   toastMessage,
+  soldOutNotice,
   countdown,
 }: {
   item: FoodItem;
@@ -430,58 +441,77 @@ function DetailScreen({
   onBuyNow: (item: FoodItem) => void;
   onViewCart: () => void;
   toastMessage: string | null;
+  soldOutNotice: string | null;
   countdown: string;
 }) {
-  const remaining = item.total - item.sold;
+  const remaining = getRemaining(item);
+  const itemOutOfStock = isOutOfStock(item);
   const discountPct = Math.round((1 - item.salePrice / item.originalPrice) * 100);
 
   return (
     <div className="flex flex-col h-full bg-[#f8f4f0]">
       <div className="relative shrink-0">
-        <ImageWithFallback src={item.image} alt={item.name} className="w-full h-64 object-cover" />
+        <ImageWithFallback src={item.image} alt={item.name} className={`w-full h-64 object-cover ${itemOutOfStock ? "grayscale" : ""}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        {itemOutOfStock && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-2 flex items-center gap-2">
+              <AlertTriangle size={18} className="text-[#ff3d00]" />
+              <span className="text-[#ff3d00] font-black text-sm">HẾT HÀNG</span>
+            </div>
+          </div>
+        )}
         <button onClick={onBack} className="absolute top-12 left-4 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow">
           <ArrowLeft size={20} className="text-[#1a1008]" />
         </button>
-        <div className="absolute top-12 right-4 bg-[#ff3d00] text-white text-sm font-black px-3 py-1 rounded-full">
-          -{discountPct}%
+        <div className={`absolute top-12 right-4 text-white text-sm font-black px-3 py-1 rounded-full ${itemOutOfStock ? "bg-gray-500" : "bg-[#ff3d00]"}`}>
+          {itemOutOfStock ? "HẾT" : `-${discountPct}%`}
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto -mt-4">
         <div className="bg-[#f8f4f0] rounded-t-3xl px-5 pt-5 pb-32">
           <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center gap-1 bg-orange-100 rounded-full px-3 py-1">
-              <Zap size={12} className="text-[#ff3d00] fill-[#ff3d00]" />
-              <span className="text-[#ff3d00] text-xs font-bold">FLASH SALE</span>
+            <div className={`flex items-center gap-1 rounded-full px-3 py-1 ${itemOutOfStock ? "bg-gray-100" : "bg-orange-100"}`}>
+              <Zap size={12} className={itemOutOfStock ? "text-[#8a7060]" : "text-[#ff3d00] fill-[#ff3d00]"} />
+              <span className={`text-xs font-bold ${itemOutOfStock ? "text-[#8a7060]" : "text-[#ff3d00]"}`}>FLASH SALE</span>
             </div>
+            {itemOutOfStock && (
+              <span className="bg-gray-100 text-[#8a7060] text-xs font-bold px-3 py-1 rounded-full">Hết hàng</span>
+            )}
             <div className="flex items-center gap-1">
               <Star size={14} className="text-yellow-400 fill-yellow-400" />
               <span className="text-sm text-[#8a7060] font-semibold">{item.rating}</span>
             </div>
           </div>
 
-          <h1 className="text-[#1a1008] mb-2" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800, fontSize: "22px" }}>
+          <h1 className={`mb-2 ${itemOutOfStock ? "text-[#8a7060]" : "text-[#1a1008]"}`} style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 800, fontSize: "22px" }}>
             {item.name}
           </h1>
           <p className="text-[#8a7060] text-sm leading-relaxed mb-4">{item.description}</p>
 
           <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
             <div className="flex items-baseline gap-3 mb-1">
-              <span className="text-[#ff3d00]" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900, fontSize: "32px" }}>
+              <span className={itemOutOfStock ? "text-[#8a7060] line-through" : "text-[#ff3d00]"} style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 900, fontSize: "32px" }}>
                 {formatPriceShort(item.salePrice)}
               </span>
               <span className="text-[#8a7060] text-lg line-through">{formatPriceShort(item.originalPrice)}</span>
             </div>
-            <div className="text-[#8a7060] text-xs">
-              Tiết kiệm <span className="text-[#ff3d00] font-bold">{formatPriceShort(item.originalPrice - item.salePrice)}</span> với Flash Sale
-            </div>
+            {!itemOutOfStock && (
+              <div className="text-[#8a7060] text-xs">
+                Tiết kiệm <span className="text-[#ff3d00] font-bold">{formatPriceShort(item.originalPrice - item.salePrice)}</span> với Flash Sale
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[#1a1008] text-sm font-semibold">Số lượng còn lại</span>
-              <span className="text-[#ff3d00]" style={{ fontWeight: 800 }}>Còn {remaining} suất</span>
+              {itemOutOfStock ? (
+                <span className="text-red-500 font-bold text-sm">Hết hàng</span>
+              ) : (
+                <span className="text-[#ff3d00]" style={{ fontWeight: 800 }}>Còn {remaining} suất</span>
+              )}
             </div>
             <StockBar sold={item.sold} total={item.total} />
             <div className="flex justify-between text-xs text-[#8a7060] mt-1">
@@ -501,7 +531,20 @@ function DetailScreen({
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        {toastMessage && (
+        {soldOutNotice && (
+          <div className="px-4 pb-2">
+            <div
+              className="rounded-2xl px-4 py-3 text-sm shadow-lg ring-1 ring-red-200"
+              style={{ background: "linear-gradient(135deg, #fff5f5 0%, #fff0e6 100%)" }}
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="shrink-0 text-[#ff3d00]" />
+                <span className="flex-1 min-w-0 font-semibold text-[#ff3d00]">{soldOutNotice}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        {toastMessage && !itemOutOfStock && (
           <div className="px-4 pb-2">
             <div className="rounded-2xl bg-[#1a1a1a]/95 px-4 py-3 text-sm text-white shadow-xl ring-1 ring-white/10">
               <div className="flex items-center gap-2">
@@ -518,12 +561,33 @@ function DetailScreen({
           </div>
         )}
         <div className="bg-white border-t border-[#f0ebe6] px-4 py-4 flex gap-3">
-          <button onClick={() => onAddToCart(item)} className="flex-1 border-2 border-[#ff3d00] text-[#ff3d00] rounded-2xl py-3.5 text-sm active:scale-95 transition-transform" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
-            Thêm vào giỏ
-          </button>
-          <button onClick={() => onBuyNow(item)} className="flex-1 bg-[#ff3d00] text-white rounded-2xl py-3.5 text-sm active:scale-95 transition-transform shadow-lg" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
-            Mua ngay 🔥
-          </button>
+          {itemOutOfStock ? (
+            <>
+              <button
+                disabled
+                className="flex-1 border-2 border-gray-200 text-[#8a7060] rounded-2xl py-3.5 text-sm cursor-not-allowed opacity-60"
+                style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}
+              >
+                Hết hàng
+              </button>
+              <button
+                disabled
+                className="flex-1 bg-gray-200 text-[#8a7060] rounded-2xl py-3.5 text-sm cursor-not-allowed opacity-60"
+                style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}
+              >
+                Không thể mua
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => onAddToCart(item)} className="flex-1 border-2 border-[#ff3d00] text-[#ff3d00] rounded-2xl py-3.5 text-sm active:scale-95 transition-transform" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
+                Thêm vào giỏ
+              </button>
+              <button onClick={() => onBuyNow(item)} className="flex-1 bg-[#ff3d00] text-white rounded-2xl py-3.5 text-sm active:scale-95 transition-transform shadow-lg" style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 700 }}>
+                Mua ngay 🔥
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -1111,12 +1175,14 @@ function OutOfStockScreen({
   item,
   onBack,
   onViewOthers,
+  items,
 }: {
   item: FoodItem | null;
   onBack: () => void;
   onViewOthers: () => void;
+  items: FoodItem[];
 }) {
-  const availableItems = FOOD_ITEMS.filter((f) => f.total - f.sold > 0 && f.id !== item?.id);
+  const availableItems = items.filter((f) => !isOutOfStock(f) && f.id !== item?.id);
 
   return (
     <div className="flex flex-col h-full bg-[#f8f4f0]">
@@ -1203,7 +1269,7 @@ function OutOfStockScreen({
                     <span className="text-[#ff3d00] text-sm font-bold">{formatPriceShort(avItem.salePrice)}</span>
                     <span className="text-[#8a7060] text-xs line-through">{formatPriceShort(avItem.originalPrice)}</span>
                   </div>
-                  <div className="text-xs text-[#8a7060]">Còn {avItem.total - avItem.sold} suất</div>
+                  <div className="text-xs text-[#8a7060]">Còn {getRemaining(avItem)} suất</div>
                 </div>
                 <span className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded-full font-semibold shrink-0">
                   Còn hàng
@@ -1283,14 +1349,20 @@ function BottomNav({
 // ─── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
-  const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
+  const [foodItems, setFoodItems] = useState<FoodItem[]>(() => FOOD_ITEMS.map((item) => ({ ...item })));
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [outOfStockItem, setOutOfStockItem] = useState<FoodItem | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedPayment, setSelectedPayment] = useState("cash");
   const countdown = useCountdown(5720);
 
+  const selectedItem = selectedItemId != null
+    ? foodItems.find((item) => item.id === selectedItemId) ?? null
+    : null;
+
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [soldOutNotice, setSoldOutNotice] = useState<string | null>(null);
   const [cartBump, setCartBump] = useState(false);
 
   useEffect(() => {
@@ -1298,6 +1370,37 @@ export default function App() {
     const timer = setTimeout(() => setToastMessage(null), 1800);
     return () => clearTimeout(timer);
   }, [toastMessage]);
+
+  useEffect(() => {
+    if (screen !== "detail" || selectedItemId == null) {
+      setSoldOutNotice(null);
+      return;
+    }
+
+    const item = foodItems.find((food) => food.id === selectedItemId);
+    if (!item) return;
+
+    if (isOutOfStock(item)) {
+      setSoldOutNotice("Sản phẩm đã hết hàng");
+      return;
+    }
+
+    setSoldOutNotice(null);
+    const interval = setInterval(() => {
+      setFoodItems((prev) =>
+        prev.map((food) => {
+          if (food.id !== selectedItemId || isOutOfStock(food)) return food;
+          const updated = { ...food, sold: food.sold + 1 };
+          if (isOutOfStock(updated)) {
+            setSoldOutNotice("Sản phẩm đã hết hàng");
+          }
+          return updated;
+        })
+      );
+    }, 2200);
+
+    return () => clearInterval(interval);
+  }, [screen, selectedItemId, selectedItem?.sold, selectedItem?.total]);
 
   function addToCart(item: FoodItem) {
     setCart((prev) => {
@@ -1308,6 +1411,7 @@ export default function App() {
   }
 
   function handleAddToCart(item: FoodItem) {
+    if (isOutOfStock(item)) return;
     addToCart(item);
     setToastMessage(`Đã thêm ${item.name} vào giỏ hàng`);
     setCartBump(true);
@@ -1323,13 +1427,9 @@ export default function App() {
   }
 
   function handleBuyNow(item: FoodItem) {
+    if (isOutOfStock(item)) return;
     addToCart(item);
     setScreen("cart");
-  }
-
-  function handleOutOfStock(item: FoodItem) {
-    setOutOfStockItem(item);
-    setScreen("outofstock");
   }
 
   function handleOrderSuccess() {
@@ -1359,16 +1459,16 @@ export default function App() {
         {/* Screen content */}
         <div className="absolute inset-0 overflow-hidden">
           {screen === "home" && (
-            <HomeScreen onFlashSale={() => setScreen("flashsale")} onCart={() => setScreen("cart")} cartCount={cartCount} countdown={countdown} />
+            <HomeScreen onFlashSale={() => setScreen("flashsale")} onCart={() => setScreen("cart")} cartCount={cartCount} countdown={countdown} items={foodItems} />
           )}
           {screen === "flashsale" && (
             <FlashSaleScreen
               onBack={() => setScreen("home")}
-              onDetail={(item) => { setSelectedItem(item); setScreen("detail"); }}
-              onOutOfStock={handleOutOfStock}
+              onDetail={(item) => { setSelectedItemId(item.id); setScreen("detail"); }}
               onCart={() => setScreen("cart")}
               cartCount={cartCount}
               countdown={countdown}
+              items={foodItems}
             />
           )}
           {screen === "detail" && selectedItem && (
@@ -1379,6 +1479,7 @@ export default function App() {
               onBuyNow={handleBuyNow}
               onViewCart={() => setScreen("cart")}
               toastMessage={toastMessage}
+              soldOutNotice={soldOutNotice}
               countdown={countdown}
             />
           )}
@@ -1400,7 +1501,7 @@ export default function App() {
           )}
           {screen === "ordersuccess" && (
             <OrderSuccessScreen
-              cart={cart.length === 0 ? [{ food: FOOD_ITEMS[0], qty: 1 }] : cart}
+              cart={cart.length === 0 ? [{ food: foodItems[0], qty: 1 }] : cart}
               paymentMethod={selectedPayment}
               onBackHome={() => { setScreen("home"); }}
             />
@@ -1410,6 +1511,7 @@ export default function App() {
               item={outOfStockItem}
               onBack={() => setScreen("flashsale")}
               onViewOthers={() => setScreen("flashsale")}
+              items={foodItems}
             />
           )}
         </div>
@@ -1442,8 +1544,8 @@ export default function App() {
           <button
             key={s.id}
             onClick={() => {
-              if (s.id === "detail" && !selectedItem) setSelectedItem(FOOD_ITEMS[0]);
-              if (s.id === "outofstock") setOutOfStockItem(FOOD_ITEMS[2]);
+              if (s.id === "detail" && selectedItemId == null) setSelectedItemId(foodItems[0].id);
+              if (s.id === "outofstock") setOutOfStockItem(foodItems.find(isOutOfStock) ?? foodItems[2]);
               setScreen(s.id);
             }}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${screen === s.id ? "bg-[#ff3d00] text-white shadow-lg scale-105" : "bg-white text-[#1a1008] shadow"}`}
